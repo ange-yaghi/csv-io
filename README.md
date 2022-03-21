@@ -1,3 +1,3 @@
-# CMake Template Project
+# CSV I/O Library
 
-This repository includes all basic features that are commonly used in my projects such as gtest, CMake and subdirectories.
+This is a simple library to read/write CSV files.

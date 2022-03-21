@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.10)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "cmake")
 
-set(ProjectName "cmake-template")
-set(ProjectNamespace "atg_tmpl")
+set(ProjectName "csv-io")
+set(ProjectNamespace "atg_csv")
 
 project("${ProjectName}")
 
@@ -33,9 +33,11 @@ set_property(TARGET gtest_main PROPERTY FOLDER "gtest")
 add_library("${ProjectName}" STATIC
     # Source files
     src/information.cpp
+    src/csv_data.cpp
 
     # Header files
     include/information.h
+    include/csv_data.h
 )
 
 target_compile_definitions("${ProjectName}" PRIVATE PROJECT_NAMESPACE=${ProjectNamespace})
@@ -47,6 +49,10 @@ add_executable("${ProjectName}-main"
     # Header files
 )
 
+target_link_libraries("${ProjectName}-main"
+    "${ProjectName}"
+)
+
 # gtest
 
 enable_testing()
@@ -54,6 +60,7 @@ enable_testing()
 add_executable("${ProjectName}-test"
     # Source files
     test/sanity_test.cpp
+    test/csv_data_tests.cpp
 
     # Head files
 )
