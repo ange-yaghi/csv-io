@@ -11,12 +11,15 @@ atg_csv::CsvData::~CsvData() {
     destroy();
 }
 
-void atg_csv::CsvData::initialize(int rows, int columns, int initCapacity) {
-    m_rows = rows;
-    m_columns = columns;
-    m_data = new size_t[(size_t)rows * columns];
+void atg_csv::CsvData::initialize(int initElements, int initCapacity) {
+    m_data = new size_t[initElements];
+    m_entryCapacity = initElements;
+
     m_buffer = new char[initCapacity];
     m_bufferCapacity = initCapacity;
+
+    m_rows = 0;
+    m_columns = 0;
     m_writePosition = 0;
     m_writeEntry = 0;
 }
@@ -26,6 +29,10 @@ void atg_csv::CsvData::write(const char *entry) {
     const size_t i_end = m_writePosition + l;
     if (i_end >= m_bufferCapacity) {
         resize(i_end * 2);
+    }
+
+    if (m_writeEntry >= m_entryCapacity) {
+        resizeElements((m_entryCapacity + 1) * 2);
     }
 
     memcpy(m_buffer + m_writePosition, entry, (l + 1) * sizeof(char));
@@ -47,11 +54,57 @@ void atg_csv::CsvData::destroy() {
 
 void atg_csv::CsvData::loadCsv(const char *fname, Error *err) {
     std::fstream inputFile(fname, std::ios::in | std::ios::binary);
-    loadCsv(inputFile);
+
+    if (!inputFile.is_open()) {
+        if (err != nullptr) {
+            err->err = ErrorCode::CouldNotOpenFile;
+        }
+    }
+    else {
+        loadCsv(inputFile, err);
+
+        inputFile.close();
+    }
 }
 
 void atg_csv::CsvData::writeCsv(const char *fname, Error *err) {
-    /* void */
+    std::fstream outputFile(fname, std::ios::out | std::ios::binary);
+
+    if (!outputFile.is_open()) {
+        if (err != nullptr) {
+            err->err = ErrorCode::CouldNotOpenFile;
+        }
+    }
+    else {
+        for (int i = 0; i < m_rows; ++i) {
+            for (int j = 0; j < m_columns; ++j) {
+                const char *entry = readEntry(i, j);
+                const bool hasQuotes = strchr(entry, '"') != nullptr;
+
+                if (hasQuotes) outputFile << "\"";
+
+                for (int i = 0; entry[i] != 0; ++i) {
+                    if (entry[i] == '"') {
+                        outputFile << "\"\"";
+                    }
+                    else {
+                        outputFile << entry[i];
+                    }
+                }
+
+                if (hasQuotes) outputFile << "\"";
+
+                if (j != m_columns - 1) {
+                    outputFile << ",";
+                }
+                else if (i != m_rows - 1) {
+                    outputFile << "\n";
+                }
+            }
+        }
+
+        outputFile.close();
+    }
 }
 
 void atg_csv::CsvData::resize(size_t newCapacity) {
@@ -64,7 +117,17 @@ void atg_csv::CsvData::resize(size_t newCapacity) {
     m_bufferCapacity = newCapacity;
 }
 
-void atg_csv::CsvData::loadCsv(std::istream &is) {
+void atg_csv::CsvData::resizeElements(size_t elementCapacity) {
+    size_t *newBuffer = new size_t[elementCapacity];
+    memcpy(newBuffer, m_data, m_writeEntry * sizeof(size_t));
+
+    delete[] m_data;
+
+    m_data = newBuffer;
+    m_entryCapacity = elementCapacity;
+}
+
+void atg_csv::CsvData::loadCsv(std::istream &is, Error *err) {
     enum class State {
         Element,
         QuotedEntry,
@@ -73,17 +136,49 @@ void atg_csv::CsvData::loadCsv(std::istream &is) {
         Done
     };
 
+#define NEXT_LINE() ++line; col = 0;
+#define CHECK_COLUMN_COUNT()                                            \
+        if (tableColumns == 0) {                                        \
+            tableColumns = recordWidth;                                 \
+        }                                                               \
+        else if (tableColumns != 0 && recordWidth != tableColumns) {    \
+            if (err != nullptr) {                                       \
+                err->err = ErrorCode::InconsistentColumnCount;          \
+                err->line = line;                                       \
+            }                                                           \
+            break;                                                      \
+        }
+#define UNEXPECTED_CHARACTER()                                          \
+        if (err != nullptr) {                                           \
+            err->err = ErrorCode::UnexpectedCharacter;                  \
+            err->line = line;                                           \
+            err->column = col;                                          \
+            break;                                                      \
+        }
+#define UNEXPECTED_EOF()                                                \
+        if (err != nullptr) {                                           \
+            err->err = ErrorCode::UnexpectedEndOfFile;                  \
+            err->line = line;                                           \
+            err->column = col;                                          \
+            break;                                                      \
+        }
+
     std::istream::sentry se(is, true);
     std::streambuf *sb = is.rdbuf();
 
-    initialize(3, 3);
+    initialize(4, 4);
 
     CharBuffer buffer;
     buffer.initialize(128);
 
     const char del = ',';
 
-    int record = 0;
+    int line = 1;
+    int col = 0;
+
+    int tableColumns = 0;
+    int tableRows = 1;
+
     int recordWidth = 0;
 
     State state = State::Element;
@@ -92,6 +187,7 @@ void atg_csv::CsvData::loadCsv(std::istream &is) {
         while (true) {
             State nextState = state;
 
+            ++col;
             const int c = sb->sbumpc();
             if (state == State::Element) {
                 if (c == del) {
@@ -102,12 +198,17 @@ void atg_csv::CsvData::loadCsv(std::istream &is) {
                     write("");
                 }
                 else if (c == '\n') {
-                    ++record;
+                    ++tableRows;
+                    ++recordWidth;
 
-                    recordWidth = 0;
                     nextState = State::Element;
 
                     write("");
+
+                    CHECK_COLUMN_COUNT();
+                    NEXT_LINE();
+
+                    recordWidth = 0;
                 }
                 else if (c == '\r') {
                     nextState = State::Element;
@@ -121,6 +222,9 @@ void atg_csv::CsvData::loadCsv(std::istream &is) {
                 }
                 else if (c == EOF) {
                     nextState = State::Done;
+                    ++recordWidth;
+
+                    CHECK_COLUMN_COUNT();
                 }
                 else {
                     ++recordWidth;
@@ -133,8 +237,6 @@ void atg_csv::CsvData::loadCsv(std::istream &is) {
             }
             else if (state == State::Entry) {
                 if (c == del) {
-                    ++recordWidth;
-
                     nextState = State::Element;
 
                     buffer.write(0);
@@ -142,19 +244,22 @@ void atg_csv::CsvData::loadCsv(std::istream &is) {
                     buffer.reset();
                 }
                 else if (c == '\n') {
-                    recordWidth = 0;
-
                     nextState = State::Element;
 
                     buffer.write(0);
                     write(buffer.buffer);
                     buffer.reset();
+
+                    CHECK_COLUMN_COUNT();
+                    NEXT_LINE();
+
+                    recordWidth = 0;
                 }
                 else if (c == '\r') {
                     nextState = State::Entry;
                 }
                 else if (c == '"') {
-                    /* error */
+                    UNEXPECTED_CHARACTER();
                 }
                 else if (c == EOF) {
                     nextState = State::Done;
@@ -162,6 +267,8 @@ void atg_csv::CsvData::loadCsv(std::istream &is) {
                     buffer.write(0);
                     write(buffer.buffer);
                     buffer.reset();
+
+                    CHECK_COLUMN_COUNT();
                 }
                 else {
                     nextState = State::Entry;
@@ -173,11 +280,8 @@ void atg_csv::CsvData::loadCsv(std::istream &is) {
                 if (c == '"') {
                     nextState = State::QuotedEntryClosingQuote;
                 }
-                else if (c == '\n') {
-                    /* error */
-                }
                 else if (c == EOF) {
-                    /* error */
+                    UNEXPECTED_EOF();
                 }
                 else if (c == '\r') {
                     nextState = State::QuotedEntry;
@@ -186,6 +290,10 @@ void atg_csv::CsvData::loadCsv(std::istream &is) {
                     nextState = State::QuotedEntry;
 
                     buffer.write(c);
+
+                    if (c == '\n') {
+                        NEXT_LINE();
+                    }
                 }
             }
             else if (state == State::QuotedEntryClosingQuote) {
@@ -204,21 +312,27 @@ void atg_csv::CsvData::loadCsv(std::istream &is) {
                 else if (c == '\n') {
                     nextState = State::Element;
 
-                    recordWidth = 0;
-                    ++record;
+                    ++tableRows;
 
                     buffer.write(0);
                     write(buffer.buffer);
                     buffer.reset();
+
+                    CHECK_COLUMN_COUNT();
+                    NEXT_LINE();
+
+                    recordWidth = 0;
                 }
                 else if (c == EOF) {
                     nextState = State::Done;
 
                     buffer.write(0);
                     write(buffer.buffer);
+
+                    CHECK_COLUMN_COUNT();
                 }
                 else {
-                    /* error */
+                    UNEXPECTED_CHARACTER();
                 }
             }
             else if (state == State::Done) {
@@ -227,7 +341,12 @@ void atg_csv::CsvData::loadCsv(std::istream &is) {
 
             state = nextState;
         }
+
+        m_rows = tableRows;
+        m_columns = tableColumns;
     }
+
+    buffer.destroy();
 }
 
 bool atg_csv::CsvData::isWhitespace(char c) {

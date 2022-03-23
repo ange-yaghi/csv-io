@@ -7,7 +7,10 @@ int main() {
     constexpr int testSize = 1024;
 
     atg_csv::CsvData csv;
-    csv.initialize(testSize, testSize, testSize * testSize * 17);
+    csv.initialize(4, testSize * testSize * 17);
+
+    csv.m_rows = testSize;
+    csv.m_columns = testSize;
 
     for (int i = 0; i < testSize; ++i) {
         for (int j = 0; j < testSize; ++j) {

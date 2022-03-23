@@ -7,14 +7,19 @@ namespace atg_csv {
     class CsvData {
         public:
             enum class ErrorCode {
-                FileNotFound,
-                InsufficientPermissions
+                Success,
+                CouldNotOpenFile,
+                InconsistentColumnCount,
+                UnexpectedCharacter,
+                UnexpectedEndOfFile,
+                Unknown
             };
 
             struct Error {
-                int line;
-                int column;
-                const char *msg;
+                ErrorCode err = ErrorCode::Success;
+                const char *msg = "";
+                int line = -1;
+                int column = -1;
             };
 
             struct CharBuffer {
@@ -32,14 +37,12 @@ namespace atg_csv {
             CsvData();
             ~CsvData();
 
-            void initialize(int rows, int columns, int initCapacity = 1024);
+            void initialize(int initElements = 4, int initCapacity = 1024);
             void write(const char *entry);
             void destroy();
 
             void loadCsv(const char *fname, Error *err = nullptr);
             void writeCsv(const char *fname, Error *err = nullptr);
-
-            void resize(size_t newCapacity);
 
             inline const char *readEntry(int row, int col) const {
                 return m_data[row * m_columns + col] + m_buffer;
@@ -53,14 +56,20 @@ namespace atg_csv {
                 m_writePosition = m_data[row * m_columns + col];
             }
 
+        public:
+            int m_rows = 0;
+            int m_columns = 0;
+
         protected:
-            void loadCsv(std::istream &is);
+            void resize(size_t newCapacity);
+            void resizeElements(size_t elementCapacity);
+
+            void loadCsv(std::istream &is, Error *err);
             static bool isWhitespace(char c);
 
         protected:
             size_t *m_data = nullptr;
-            int m_rows = 0;
-            int m_columns = 0;
+            size_t m_entryCapacity = 0;
 
             char *m_buffer = nullptr;
             size_t m_bufferCapacity = 0;

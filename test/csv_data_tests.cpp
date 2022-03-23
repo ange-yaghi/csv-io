@@ -38,6 +38,106 @@ TEST(CsvDataTests, PerformanceBenchmark) {
 }
 
 TEST(CsvDataTests, LoadCsvSanityCheck) {
-    atg_csv::CsvData data;
-    data.loadCsv("../../test/resources/valid_csv.csv");
+    atg_csv::CsvData csv;
+    atg_csv::CsvData::Error err;
+    csv.loadCsv("../../test/resources/valid_csv.csv", &err);
+
+    EXPECT_EQ(csv.m_columns, 3);
+    EXPECT_EQ(csv.m_rows, 2);
+
+    EXPECT_EQ(err.err, atg_csv::CsvData::ErrorCode::Success);
+
+    EXPECT_EQ(strcmp(csv.readEntry(0, 0), "col0"), 0);
+    EXPECT_EQ(strcmp(csv.readEntry(0, 1), "col1"), 0);
+    EXPECT_EQ(strcmp(csv.readEntry(0, 2), ""), 0);
+    EXPECT_EQ(strcmp(csv.readEntry(1, 0), "10"), 0);
+    EXPECT_EQ(strcmp(csv.readEntry(1, 1), " with leading/trailing spaces "), 0);
+    EXPECT_EQ(strcmp(csv.readEntry(1, 2), " \"with quotes\" "), 0);
+}
+
+TEST(CsvDataTests, MissingFile) {
+    atg_csv::CsvData csv;
+    atg_csv::CsvData::Error err;
+    csv.loadCsv("../../test/resources/fake_file.csv", &err);
+
+    EXPECT_EQ(err.err, atg_csv::CsvData::ErrorCode::CouldNotOpenFile);
+}
+
+TEST(CsvDataTests, InconsistentRows0) {
+    atg_csv::CsvData csv;
+    atg_csv::CsvData::Error err;
+    csv.loadCsv("../../test/resources/inconsistent_rows_0.csv", &err);
+
+    EXPECT_EQ(err.err, atg_csv::CsvData::ErrorCode::InconsistentColumnCount);
+    EXPECT_EQ(err.line, 2);
+}
+
+TEST(CsvDataTests, InconsistentRows1) {
+    atg_csv::CsvData csv;
+    atg_csv::CsvData::Error err;
+    csv.loadCsv("../../test/resources/inconsistent_rows_1.csv", &err);
+
+    EXPECT_EQ(err.err, atg_csv::CsvData::ErrorCode::InconsistentColumnCount);
+    EXPECT_EQ(err.line, 2);
+}
+
+TEST(CsvDataTests, UnexpectedCharacter0) {
+    atg_csv::CsvData csv;
+    atg_csv::CsvData::Error err;
+    csv.loadCsv("../../test/resources/unexpected_character_0.csv", &err);
+
+    EXPECT_EQ(err.err, atg_csv::CsvData::ErrorCode::UnexpectedCharacter);
+    EXPECT_EQ(err.line, 1);
+    EXPECT_EQ(err.column, 12);
+}
+
+TEST(CsvDataTests, UnexpectedCharacter1) {
+    atg_csv::CsvData csv;
+    atg_csv::CsvData::Error err;
+    csv.loadCsv("../../test/resources/unexpected_character_1.csv", &err);
+
+    EXPECT_EQ(err.err, atg_csv::CsvData::ErrorCode::UnexpectedCharacter);
+    EXPECT_EQ(err.line, 1);
+    EXPECT_EQ(err.column, 11);
+}
+
+TEST(CsvDataTests, UnexpectedEOF) {
+    atg_csv::CsvData csv;
+    atg_csv::CsvData::Error err;
+    csv.loadCsv("../../test/resources/unexpected_eof.csv", &err);
+
+    EXPECT_EQ(err.err, atg_csv::CsvData::ErrorCode::UnexpectedEndOfFile);
+    EXPECT_EQ(err.line, 2);
+    EXPECT_EQ(err.column, 2);
+}
+
+TEST(CsvDataTests, SingleColumn) {
+    atg_csv::CsvData csv;
+    atg_csv::CsvData::Error err;
+    csv.loadCsv("../../test/resources/single_column.csv", &err);
+
+    EXPECT_EQ(csv.m_rows, 2);
+    EXPECT_EQ(csv.m_columns, 1);
+
+    EXPECT_EQ(err.err, atg_csv::CsvData::ErrorCode::Success);
+}
+
+TEST(CsvDataTests, WriteTest) {
+    atg_csv::CsvData csv;
+    atg_csv::CsvData::Error err;
+    csv.loadCsv("../../test/resources/valid_csv.csv", &err);
+    csv.writeCsv("../../test/resources/write_test.csv", &err);
+    csv.loadCsv("../../test/resources/write_test.csv", &err);
+
+    EXPECT_EQ(csv.m_columns, 3);
+    EXPECT_EQ(csv.m_rows, 2);
+
+    EXPECT_EQ(err.err, atg_csv::CsvData::ErrorCode::Success);
+
+    EXPECT_EQ(strcmp(csv.readEntry(0, 0), "col0"), 0);
+    EXPECT_EQ(strcmp(csv.readEntry(0, 1), "col1"), 0);
+    EXPECT_EQ(strcmp(csv.readEntry(0, 2), ""), 0);
+    EXPECT_EQ(strcmp(csv.readEntry(1, 0), "10"), 0);
+    EXPECT_EQ(strcmp(csv.readEntry(1, 1), " with leading/trailing spaces "), 0);
+    EXPECT_EQ(strcmp(csv.readEntry(1, 2), " \"with quotes\" "), 0);
 }
