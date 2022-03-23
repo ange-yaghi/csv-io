@@ -17,6 +17,15 @@ namespace atg_csv {
                 const char *msg;
             };
 
+            struct CharBuffer {
+                char *buffer = nullptr;
+                int writeIndex = 0;
+                int bufferSize = 0;
+
+                void write(char c);
+                void reset();
+            };
+
         public:
             CsvData();
             ~CsvData();
@@ -44,7 +53,7 @@ namespace atg_csv {
 
         protected:
             void loadCsv(std::istream &is);
-            static size_t readLine(std::istream &is, char **buffer, size_t bufferSize);
+            static bool isWhitespace(char c);
 
         protected:
             size_t *m_data = nullptr;

@@ -63,53 +63,112 @@ void atg_csv::CsvData::resize(size_t newCapacity) {
 }
 
 void atg_csv::CsvData::loadCsv(std::istream &is) {
-    size_t bufferSize = 4;
-    char *buffer = new char[bufferSize];
+    enum class State {
+        Element,
+        QuotedEntry,
+        Entry,
+        EscapedCharacter,
+    };
 
-    int currentLine = 0;
-
-    while (is.peek() != -1) {
-        ++currentLine;
-        bufferSize = readLine(is, &buffer, bufferSize);
-    }
-}
-
-size_t atg_csv::CsvData::readLine(std::istream &is, char **buffer, size_t bufferSize) {
     std::istream::sentry se(is, true);
     std::streambuf *sb = is.rdbuf();
 
-    char *&target = *buffer;
+    CharBuffer buffer;
+
+    const char del = ',';
+
+    int record = 0;
+    int recordWidth = 0;
+
+    State state = State::Element;
 
     if (se) {
-        for (int i = 0;; ++i) {
-            if (i == bufferSize - 2) {
-                char *newBuffer = new char[bufferSize * 2];
-                memcpy(newBuffer, target, bufferSize);
-                delete[] target;
-
-                target = newBuffer;
-                bufferSize *= 2;
-            }
+        while (true) {
+            State nextState = state;
 
             const int c = sb->sbumpc();
-            switch (c) {
-            case '\n':
-                target[i] = 0;
-                return bufferSize;
-            case '\r':
-                target[i] = 0;
-                if (sb->sgetc() == '\n') sb->sbumpc();
-                return bufferSize;
-            case EOF:
-                target[i] = 0;
-                if (i == 0) is.setstate(std::ios::eofbit);
-                return bufferSize;
-            default:
-                (*buffer)[i] = static_cast<char>(c);
+            if (state == State::Element) {
+                if (c == del) {
+                    ++recordWidth;
+
+                    nextState = State::Element;
+
+                    write("");
+                }
+                else if (c == '\n') {
+                    ++record;
+
+                    recordWidth = 0;
+                    nextState = State::Element;
+
+                    write("");
+                }
+                else if (c == '\r') {
+                    nextState = State::Element;
+                }
+                else if (c == '"') {
+                    ++recordWidth;
+
+                    nextState = State::QuotedEntry;
+
+                    buffer.reset();                    
+                }
+                else {
+                    ++recordWidth;
+
+                    nextState = State::Entry;
+
+                    buffer.reset();
+                    buffer.write(c);
+                }
+            }
+            else if (state == State::Entry) {
+                if (c == del) {
+                    ++recordWidth;
+
+                    nextState = State::Entry;
+
+                    buffer.write(0);
+                    write(buffer.buffer);
+                    buffer.reset();
+                }
+                else if (c == '\n') {
+                    nextState = State::Entry;
+
+                    buffer.write(0);
+                    write(buffer.buffer);
+                    buffer.reset();
+                }
+                else if (c == '\r') {
+                    nextState = State::Element;
+                }
+                else if (c == '"') {
+                    /* error */
+                }
+
+            }
+            else if (state == State::QuotedEntry) {
+
             }
         }
     }
     else {
         return bufferSize;
+    }
+}
+
+void atg_csv::CsvData::writeToBuffer(char **buffer, int *bufferSize, int c) {
+
+}
+
+bool atg_csv::CsvData::isWhitespace(char c) {
+    switch (c) {
+    case ' ':
+    case '\n':
+    case '\r':
+    case '\t':
+        return true;
+    default:
+        return false;
     }
 }
