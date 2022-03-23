@@ -349,18 +349,6 @@ void atg_csv::CsvData::loadCsv(std::istream &is, Error *err) {
     buffer.destroy();
 }
 
-bool atg_csv::CsvData::isWhitespace(char c) {
-    switch (c) {
-    case ' ':
-    case '\n':
-    case '\r':
-    case '\t':
-        return true;
-    default:
-        return false;
-    }
-}
-
 void atg_csv::CsvData::CharBuffer::initialize(int bufferSize) {
     this->bufferSize = bufferSize;
     this->writeIndex = 0;

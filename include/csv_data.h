@@ -65,7 +65,6 @@ namespace atg_csv {
             void resizeElements(size_t elementCapacity);
 
             void loadCsv(std::istream &is, Error *err);
-            static bool isWhitespace(char c);
 
         protected:
             size_t *m_data = nullptr;
