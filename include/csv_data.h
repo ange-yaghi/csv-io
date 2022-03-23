@@ -22,8 +22,10 @@ namespace atg_csv {
                 int writeIndex = 0;
                 int bufferSize = 0;
 
+                void initialize(int bufferSize);
                 void write(char c);
                 void reset();
+                void destroy();
             };
 
         public:

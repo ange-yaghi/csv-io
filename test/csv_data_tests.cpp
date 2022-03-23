@@ -36,3 +36,8 @@ TEST(CsvDataTests, PerformanceBenchmark) {
         }
     }
 }
+
+TEST(CsvDataTests, LoadCsvSanityCheck) {
+    atg_csv::CsvData data;
+    data.loadCsv("../../test/resources/valid_csv.csv");
+}
