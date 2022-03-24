@@ -50,6 +50,9 @@ void atg_csv::CsvData::destroy() {
 
     m_buffer = nullptr;
     m_data = nullptr;
+
+    m_bufferCapacity = 0;
+    m_entryCapacity = 0;
 }
 
 atg_csv::CsvData::ErrorCode atg_csv::CsvData::loadCsv(
@@ -389,6 +392,7 @@ void atg_csv::CsvData::CharBuffer::reset() {
 
 void atg_csv::CsvData::CharBuffer::destroy() {
     delete[] this->buffer;
+
     this->buffer = nullptr;
     this->bufferSize = 0;
 }
