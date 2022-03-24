@@ -15,8 +15,7 @@ namespace atg_csv {
                 Unknown
             };
 
-            struct Error {
-                ErrorCode err = ErrorCode::Success;
+            struct ErrorInfo {
                 const char *msg = "";
                 int line = -1;
                 int column = -1;
@@ -41,8 +40,8 @@ namespace atg_csv {
             void write(const char *entry);
             void destroy();
 
-            void loadCsv(const char *fname, Error *err = nullptr);
-            void writeCsv(const char *fname, Error *err = nullptr);
+            ErrorCode loadCsv(const char *fname, ErrorInfo *err = nullptr, char del = ',');
+            ErrorCode writeCsv(const char *fname, ErrorInfo *err = nullptr, char del = ',');
 
             inline const char *readEntry(int row, int col) const {
                 return m_data[row * m_columns + col] + m_buffer;
@@ -64,7 +63,7 @@ namespace atg_csv {
             void resize(size_t newCapacity);
             void resizeElements(size_t elementCapacity);
 
-            void loadCsv(std::istream &is, Error *err);
+            ErrorCode loadCsv(std::istream &is, ErrorInfo *err, char del);
 
         protected:
             size_t *m_data = nullptr;

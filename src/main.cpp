@@ -4,25 +4,16 @@
 #include <iostream>
 
 int main() {
-    constexpr int testSize = 1024;
-
     atg_csv::CsvData csv;
-    csv.initialize(4, testSize * testSize * 17);
+    atg_csv::CsvData::ErrorInfo err;
 
-    csv.m_rows = testSize;
-    csv.m_columns = testSize;
+    for (int i = 0; i < 2048; ++i) {
+        csv.loadCsv("../test/resources/valid_csv.csv", &err);
+        csv.writeCsv("../test/resources/write_test.csv", &err);
+        csv.loadCsv("../test/resources/write_test.csv", &err);
 
-    for (int i = 0; i < testSize; ++i) {
-        for (int j = 0; j < testSize; ++j) {
-            csv.write("Pain is nothing.");
-        }
-    }
-
-    for (int i = 0; i < testSize; ++i) {
-        for (int j = 0; j < testSize; ++j) {
-            if (strcmp(csv.readEntry(i, j), "Pain is nothing.") != 0) {
-                std::cout << "Fail\n";
-            }
+        if (csv.m_columns != 3 && csv.m_rows != 2) {
+            std::cout << "hello";
         }
     }
 }
