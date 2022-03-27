@@ -261,6 +261,8 @@ atg_csv::CsvData::ErrorCode atg_csv::CsvData::loadCsv(
                 else if (c == '\n') {
                     nextState = State::Element;
 
+                    ++tableRows;
+
                     buffer.write(0);
                     write(buffer.buffer);
                     buffer.reset();
