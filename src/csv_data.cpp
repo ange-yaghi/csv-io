@@ -91,7 +91,8 @@ atg_csv::CsvData::ErrorCode atg_csv::CsvData::writeCsv(
         for (int i = 0; i < m_rows; ++i) {
             for (int j = 0; j < m_columns; ++j) {
                 const char *entry = readEntry(i, j);
-                const bool hasQuotes = strchr(entry, '"') != nullptr;
+                const bool hasQuotes =
+                    (strchr(entry, '"') != nullptr) || (strchr(entry, del) != nullptr);
 
                 if (hasQuotes) sb->sputc('\"');
 
@@ -339,6 +340,10 @@ atg_csv::CsvData::ErrorCode atg_csv::CsvData::loadCsv(
                     NEXT_LINE();
 
                     recordWidth = 0;
+                }
+                else if (c == '\r')
+                {
+                    nextState = State::QuotedEntryClosingQuote;
                 }
                 else if (c == EOF) {
                     nextState = State::Done;

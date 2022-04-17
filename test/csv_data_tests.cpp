@@ -46,7 +46,7 @@ TEST(CsvDataTests, LoadCsvSanityCheck) {
     EXPECT_EQ(result, atg_csv::CsvData::ErrorCode::Success);
 
     EXPECT_EQ(csv.m_columns, 3);
-    EXPECT_EQ(csv.m_rows, 2);
+    EXPECT_EQ(csv.m_rows, 3);
 
     EXPECT_EQ(strcmp(csv.readEntry(0, 0), "col0"), 0);
     EXPECT_EQ(strcmp(csv.readEntry(0, 1), "col1"), 0);
@@ -54,6 +54,9 @@ TEST(CsvDataTests, LoadCsvSanityCheck) {
     EXPECT_EQ(strcmp(csv.readEntry(1, 0), "10"), 0);
     EXPECT_EQ(strcmp(csv.readEntry(1, 1), " with leading/trailing spaces "), 0);
     EXPECT_EQ(strcmp(csv.readEntry(1, 2), " \"with quotes\" "), 0);
+    EXPECT_EQ(strcmp(csv.readEntry(2, 0), "with delim,"), 0);
+    EXPECT_EQ(strcmp(csv.readEntry(2, 1), ","), 0);
+    EXPECT_EQ(strcmp(csv.readEntry(2, 2), "hello, there"), 0);
 }
 
 TEST(CsvDataTests, MissingFile) {
@@ -149,10 +152,10 @@ TEST(CsvDataTests, WriteTest) {
         csv.writeCsv("../../test/resources/write_test.csv", &err);
     csv.loadCsv("../../test/resources/write_test.csv", &err);
 
-    EXPECT_EQ(csv.m_columns, 3);
-    EXPECT_EQ(csv.m_rows, 2);
-
     EXPECT_EQ(result, atg_csv::CsvData::ErrorCode::Success);
+
+    EXPECT_EQ(csv.m_columns, 3);
+    EXPECT_EQ(csv.m_rows, 3);
 
     EXPECT_EQ(strcmp(csv.readEntry(0, 0), "col0"), 0);
     EXPECT_EQ(strcmp(csv.readEntry(0, 1), "col1"), 0);
@@ -160,4 +163,7 @@ TEST(CsvDataTests, WriteTest) {
     EXPECT_EQ(strcmp(csv.readEntry(1, 0), "10"), 0);
     EXPECT_EQ(strcmp(csv.readEntry(1, 1), " with leading/trailing spaces "), 0);
     EXPECT_EQ(strcmp(csv.readEntry(1, 2), " \"with quotes\" "), 0);
+    EXPECT_EQ(strcmp(csv.readEntry(2, 0), "with delim,"), 0);
+    EXPECT_EQ(strcmp(csv.readEntry(2, 1), ","), 0);
+    EXPECT_EQ(strcmp(csv.readEntry(2, 2), "hello, there"), 0);
 }

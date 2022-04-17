@@ -1,2 +1,3 @@
 col0,"col1",
 10, with leading/trailing spaces ," ""with quotes"" "
+"with delim,",",","hello, there"
