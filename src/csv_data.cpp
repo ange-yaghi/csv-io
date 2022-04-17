@@ -359,8 +359,10 @@ atg_csv::CsvData::ErrorCode atg_csv::CsvData::loadCsv(
             state = nextState;
         }
 
-        m_rows = tableRows;
-        m_columns = tableColumns;
+        if (errCode == ErrorCode::Success) {
+            m_rows = tableRows;
+            m_columns = tableColumns;
+        }
     }
 
     buffer.destroy();

@@ -62,6 +62,9 @@ TEST(CsvDataTests, MissingFile) {
     atg_csv::CsvData::ErrorCode result =
         csv.loadCsv("../../test/resources/fake_file.csv", &err);
 
+    EXPECT_EQ(csv.m_columns, 0);
+    EXPECT_EQ(csv.m_rows, 0);
+
     EXPECT_EQ(result, atg_csv::CsvData::ErrorCode::CouldNotOpenFile);
 }
 
@@ -83,6 +86,8 @@ TEST(CsvDataTests, InconsistentRows1) {
 
     EXPECT_EQ(result, atg_csv::CsvData::ErrorCode::InconsistentColumnCount);
     EXPECT_EQ(err.line, 2);
+    EXPECT_EQ(csv.m_columns, 0);
+    EXPECT_EQ(csv.m_rows, 0);
 }
 
 TEST(CsvDataTests, UnexpectedCharacter0) {
@@ -94,6 +99,8 @@ TEST(CsvDataTests, UnexpectedCharacter0) {
     EXPECT_EQ(result, atg_csv::CsvData::ErrorCode::UnexpectedCharacter);
     EXPECT_EQ(err.line, 1);
     EXPECT_EQ(err.column, 12);
+    EXPECT_EQ(csv.m_columns, 0);
+    EXPECT_EQ(csv.m_rows, 0);
 }
 
 TEST(CsvDataTests, UnexpectedCharacter1) {
@@ -105,6 +112,8 @@ TEST(CsvDataTests, UnexpectedCharacter1) {
     EXPECT_EQ(result, atg_csv::CsvData::ErrorCode::UnexpectedCharacter);
     EXPECT_EQ(err.line, 1);
     EXPECT_EQ(err.column, 11);
+    EXPECT_EQ(csv.m_columns, 0);
+    EXPECT_EQ(csv.m_rows, 0);
 }
 
 TEST(CsvDataTests, UnexpectedEOF) {
@@ -116,6 +125,8 @@ TEST(CsvDataTests, UnexpectedEOF) {
     EXPECT_EQ(result, atg_csv::CsvData::ErrorCode::UnexpectedEndOfFile);
     EXPECT_EQ(err.line, 2);
     EXPECT_EQ(err.column, 2);
+    EXPECT_EQ(csv.m_columns, 0);
+    EXPECT_EQ(csv.m_rows, 0);
 }
 
 TEST(CsvDataTests, SingleColumn) {
